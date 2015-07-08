@@ -92,62 +92,25 @@ void core(u_char *param, const struct pcap_pkthdr *pkthdr, const u_char *raw_dat
             return;
         
         /* check host and domain */
-        site_t *site = NULL;
-        ssize_t cnt = hashmap_entry_by_key(dcycle->sites, req->host, (void **) &site);
-        if (cnt <= 0)
-            cnt = hashmap_entry_by_key(dcycle->sites, http_get_domain(req->host), (void **) &site);
-        
-        if(site == NULL || site->type == DA_FILTER_TYPE)
+        int status = regexec(&dcycle->reg_host, req->host, 0, NULL, 0);
+        if (REG_NOMATCH == status)
+        {
             return;
-        
-        char* cookie = NULL;
-        if (site->pcname != NULL && req->cookie_len > 0 && req->cookie != NULL && site->type >= 2)
-        {
-            cookie = strstr(req->cookie, site->pcname);    /* check uv cookie */
-            if (cookie != 0 && (*(cookie + site->pcname_len) == ';' || *(cookie + site->pcname_len) == ' '))
-                cookie = strstr(cookie + site->pcname_len, site->pcname);
-            
-            if (cookie != NULL)
-            {
-                char* sep = strchr(cookie, ';');
-                if (sep != 0)
-                    *(sep+1) = '\0';
-            }
         }
-        
-        if ((site->pcname_len > 0 && cookie != NULL) || site->pcname_len == 0 || site->type < 2)
-        {
-            /* not search type, set uri to / */
-            if (site->type != 2)
-            {
-                *(req->uri) = '/';
-                *(req->uri+1) = '\0';
-            }
+
+        ip_buf_ntos(req->saddr_str, ntohl(ip->ip_src.s_addr));
+        ip_buf_ntos(req->daddr_str, ntohl(ip->ip_dst.s_addr));
             
-            /* not cookie type, set referer to NULL */
-            if (site->type != 3)
-            {
-                *(req->referer) = '0';
-                *(req->referer+1) = '\0';
-            }
-            
-            ip_buf_ntos(req->saddr_str, ntohl(ip->ip_src.s_addr));
-            ip_buf_ntos(req->daddr_str, ntohl(ip->ip_dst.s_addr));
-            
-            dcenter_packet(req, cookie, ntohs(ip->ip_id), tcp->th_sport);
-        }        
+        dcenter_packet(req);
     }
 }
 
 
 /* 账号\t源IP\t源端口\tIP_ID\t目的IP\tURL\tREF\tUA\tCookie\t时间戳 */
-void dcenter_packet(http_request_t* req, char* cookie, unsigned int ip_id, int sport)
-{
-    unsigned int ua_id = abs(hf_crc32(req->user_agent));
-    char* mtag = http_detect_map_agent(req->user_agent) ? "1" : "0";
-    
+void dcenter_packet(http_request_t* req)
+{   
     char* buf = dcycle->buffer + dcycle->length;
-    int len = sprintf(buf, "N\t%s\t%d\t%d\t%s\thttp://%s/%.*s\t%.*s\t%s%d\t %.*s\t%ld\n", req->saddr_str, sport, ip_id, req->daddr_str, req->host, MAX_REFERER_LEN, req->uri, MAX_REFERER_LEN, req->referer, mtag, ua_id, MAX_CVAL_LEN, cookie, dcycle->timestamp);
+    int len = sprintf(buf, "%s\t%s\t%s\t%s\t%s\t%s\t%s\t%ld\n", req->saddr_str, req->daddr_str, req->host, req->uri, req->referer, req->user_agent, req->cookie, dcycle->timestamp);
     
     dcycle->length = dcycle->length + len;
     if (dcycle->length >= (MAX_PACKET_LEN - 1024))

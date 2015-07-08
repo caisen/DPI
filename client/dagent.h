@@ -6,9 +6,9 @@
 
 #include "util.h"
 
-#define SAMPLE_HOST_FILE "/etc/dagent.db"
+#define SAMPLE_HOST_FILE "/etc/dagent.conf"
 
-#define DA_VERSION	20141215
+#define DA_VERSION	20150708
 
 /* pcap filter config */
 #define DA_FILTER     "greater 100 and tcp dst port 80"
@@ -50,7 +50,7 @@ typedef struct dagent_cycle_s
     char* buffer;
     unsigned int length;
     
-	hashmap_t sites;
+	regex_t reg_host;
     dcenter_sock_t *socks;
     
     http_request_t *req;

@@ -95,6 +95,9 @@
 
 #define MALLOC(type, num)  (type *) check_malloc((num) * sizeof(type))
 
+#define STREQ(x, y)          (!strncmp((x), (y), strlen(y)))
+
+
 /* TCP header structure */
 typedef struct tcp_header
 {

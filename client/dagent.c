@@ -263,62 +263,38 @@ dcenter_sock_t* pick_dcenter_sock(void)
 void load_host_sample()
 {
     FILE * fp = NULL;
-    unsigned int length = 0;
-    
     char* line = (char*)malloc(1024);
-    char* line_bak = line;
-    
-    /* load host */
-    site_t *site = NULL;
-    unsigned int fpos = 0;
-    char host[256] = {0}, cname[256] = {0};
-    int cnt = 0, type;
-    
-    fp = fopen(SAMPLE_HOST_FILE, "rb");
+
+    bzero(line, 1024);
+    fp = fopen(SAMPLE_HOST_FILE, "r");
     if (fp == NULL)
-        exit(0);
-    
-    while (fread(&length, 4, 1, fp) > 0)
     {
-        line = line_bak;
-        
-        bzero(line, 1024);
-        fread(line, 1, length, fp);
-        
-        line = decode_str(line);
-        
-        fpos = fpos + 4 + length;
-        
-        line++;
-        
-        ssize_t len = sscanf(line,"%[^\t\n]\t%d\t%[^\t\n]", host, &type, cname);
-        if (len > 0)
+        printf("Open dagent.conf failed!\n");
+        exit(0);
+    }
+
+    while (fgets(line, sizeof(line), fp))
+    {
+        if(STREQ(line, "host="))
         {
-            site = (site_t *) MALLOC(site_t, 1);
-            site->host = strdup(host);
-            site->type = type;
-            site->cname = strdup(cname);
-            
-            if (str4_cmp(site->cname, 'N', 'U', 'L', 'L'))
-            {
-                site->pcname = NULL;
-                site->pcname_len = 0;
-            }
-            else
-            {
-                site->pcname = (char*)MALLOC(char, strlen(site->cname) + 1);
-                site->pcname_len = sprintf(site->pcname, "%s=", site->cname);
-            }
-            
-            hashmap_insert(dcycle->sites, site->host, site, sizeof(site_t));
-            
-            cnt++;
+            line+=5;
         }
-        
-        if (feof(fp))
-            break;
+        break;
+    }
+
+    if(strlen(line)==0)
+    {
+        printf("Dagent.conf does not contain [host=] !\n");
+        exit(0);
     }
     
-    free(line_bak);
+    if (0 != regcomp(&dcycle->reg_host, line, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) 
+    {
+        printf("Regcomp host faild!\n");
+        exit(0);
+    }
+
+    free(line);
+    fclose(fp);
 }
 
