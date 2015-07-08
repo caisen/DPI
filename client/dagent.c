@@ -262,7 +262,9 @@ void load_host_sample()
     FILE * fp = NULL;
     char* line = (char*)malloc(1024);
 
-    bzero(line, 1024);
+    char *p = line;
+    
+    bzero(p, 1024);
     fp = fopen(SAMPLE_HOST_FILE, "r");
     if (fp == NULL)
     {
@@ -270,22 +272,22 @@ void load_host_sample()
         exit(0);
     }
 
-    while (fgets(line, sizeof(line), fp))
+    while (fgets(p, 1024, fp))
     {
-        if(STREQ(line, "host="))
+        if(STREQ(p, "host="))
         {
-            line+=5;
+            p+=5;
         }
         break;
     }
 
-    if(strlen(line)==0)
+    if(strlen(p)==0)
     {
         printf("Dagent.conf does not contain [host=] !\n");
         exit(0);
     }
     
-    if (0 != regcomp(&dcycle->reg_host, line, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) 
+    if (0 != regcomp(&dcycle->reg_host, p, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) 
     {
         printf("Regcomp host faild!\n");
         exit(0);

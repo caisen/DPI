@@ -84,7 +84,7 @@ void core(u_char *param, const struct pcap_pkthdr *pkthdr, const u_char *raw_dat
         http_request_t *req = dcycle->req;
         http_parse_get(req, cp);        
         
-        if (req->host_len <= 0 || req->uri_len <= 0 || http_detect_agent(req->user_agent) == FALSE)
+        if (req->host_len <= 0 || req->uri_len <= 0)
             return;
         
         /* ignore no need type */
