@@ -87,9 +87,6 @@ dagent_cycle_t* cycle_init()
     dcycle->length = 0;
 	dcycle->buffer = (char*)MALLOC(char, MAX_PACKET_LEN);
     
-    /* top site hash map */
-    dcycle->sites = hashmap_create(SITE_BUCKETS);
-    
     /* init dcenter socket */
     dcycle->socks = NULL;
     
