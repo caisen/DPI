@@ -22,6 +22,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <errno.h>
+#include <regex.h>
 
 #include <arpa/inet.h>
 #include <net/ethernet.h>
@@ -154,7 +155,6 @@ typedef struct dop_timer_s
     struct timeval tv;
 } dop_timer_t;
 
-#include "hashmap.h"
 #include "http.h"
 
 #endif	/* __UTIL_H__ */
