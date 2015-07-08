@@ -4,7 +4,7 @@
 
 #PFRING
 CFLAGS = -Wall -g -O0
-LDFLAGS = -L/usr/lib -L/usr/lib64/ -L/usr/local/lib/ /usr/local/lib/libpcap.a  /usr/local/lib/libpfring.a -lnet -lrt -lpthread -levent -levent_pthreads -lz
+LDFLAGS = -L/usr/lib -L/usr/lib64/ -L/usr/local/lib/ /usr/local/lib/libpcap.a  /usr/local/lib/libpfring.a -lnet -lrt -lpthread -levent -levent_pthreads -lnuma -lz
 
 TARGET=dagent
 OBJS=capture.o  dagent.o  http.o  util.o
