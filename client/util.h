@@ -1,5 +1,3 @@
-/* $Id: util.h 158 2013-07-28 01:37:52Z libing $*/
-
 #ifndef __UTIL_H__
 #define __UTIL_H__
 

@@ -1,5 +1,3 @@
-/* $Id: capture.c 166 2013-07-28 05:49:23Z libing $*/
-
 #include "dagent.h"
 #include "capture.h"
 

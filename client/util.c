@@ -1,5 +1,3 @@
-/* $Id: util.c 169 2013-08-01 15:15:10Z libing $*/
-
 #include "util.h"
 
 /* simple wrapper around the malloc() function */

@@ -1,7 +1,4 @@
-/* $Id: http.c -1   $*/
-
 #include "http.h"
-
 
 http_request_t* http_new_request(void)
 {

@@ -1,5 +1,3 @@
-/* $Id: capture.h 80 2013-07-10 12:33:02Z libing $*/
-
 #ifndef __CAPTURE_H__
 #define __CAPTURE_H__
 

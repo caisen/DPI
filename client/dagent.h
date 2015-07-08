@@ -1,6 +1,3 @@
-/* $Id: dagent.h 163 2013-07-28 04:48:29Z libing $*/
-
-
 #ifndef __DAGENT_H__
 #define __DAGENT_H__
 
