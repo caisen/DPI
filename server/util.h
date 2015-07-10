@@ -36,7 +36,7 @@
 #include <event2/event-config.h>
 #include <event2/buffer.h>
 
-//#include <zlib.h>
+#include <zlib.h>
 #include <pthread.h>
 
 #define SITE_BUCKETS 30000

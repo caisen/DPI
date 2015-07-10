@@ -1,5 +1,6 @@
 CFLAGS = -Wall -g -O0
-LDFLAGS = -L/usr/lib -L/usr/lib64/ -L/usr/local/lib/ -lrt -lpthread -levent -levent_pthreads -lnuma -lz
+#LDFLAGS = -L/usr/lib -L/usr/lib64/ -L/usr/local/lib/ -lrt -lpthread -levent -levent_pthreads -lnuma -lz
+LDFLAGS = -L/usr/lib -L/usr/lib64/ -L/usr/local/lib/ -lrt -lpthread -levent -levent_pthreads  -lz
 
 TARGET=dcenter
 OBJS=dcenter.o util.o

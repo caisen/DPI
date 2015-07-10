@@ -76,6 +76,29 @@ void release_sock_event(struct sock_ev* ev)
     free(ev);
 }
 
+void* uzrecv(void* ptr)
+{
+    pthread_detach(pthread_self());
+    
+    struct sock_ev* ev = (struct sock_ev*)ptr;
+    
+    char* uzbuf = (char*)MALLOC(char, MAX_PACKET_LEN);
+    long uzlen = 0;
+    int ret = uncompress(uzbuf, &uzlen, ev->buffer+7, ev->data_len);
+    if( ret == Z_OK)  
+    { 
+        printf("%s\n",uzbuf);
+    }  
+    else
+    {
+        printf("zlib uncompress failed, len:%d status:%d :%s\n", ev->data_len, ret, ev->buffer+7);
+    }
+    
+    free(uzbuf);
+        
+	pthread_exit(NULL);
+}
+
 void do_read(int sock, short event, void* arg)
 {
     struct event* write_ev;
@@ -98,7 +121,9 @@ void do_read(int sock, short event, void* arg)
     }
     else if((ev->offset>(ev->data_len+7))&&(ev->read_data_flag==1))
     {
-       // get data
+       pthread_t pt_uzrecv;
+       pthread_create(&pt_uzrecv, NULL, uzrecv, ev);
+       
        memcpy(ev->buffer,ev->buffer+ev->data_len+7,ev->offset-ev->data_len-7);
        ev->offset = ev->offset-ev->data_len-7;
        ev->read_data_flag = 0;
@@ -109,8 +134,6 @@ void do_read(int sock, short event, void* arg)
        close(sock);
        return;
     }
-
-
 }
 
 void do_accept(int sock, short event, void* arg)
