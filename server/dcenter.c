@@ -64,6 +64,8 @@ void dcenter_sock_init(void)
         exit(0);
 	}
 
+    dcycle->socks = sock;
+    
     sock->status = TRUE;
 }
 
