@@ -22,7 +22,7 @@ int main(int argc, char *argv[])
 	return 0;
 }
 
-dagent_cycle_t* cycle_init()
+dcenter_cycle_t* cycle_init()
 {
     /* init dagent_cycle_t*/
     dcycle = MALLOC(dcenter_cycle_t, 1);

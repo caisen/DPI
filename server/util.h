@@ -8,9 +8,6 @@
 #include <sys/ioctl.h>
 #include <sys/stat.h>
 
-#include <pcap/bpf.h>
-#include <pcap/pcap.h>
-
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>	
@@ -39,7 +36,7 @@
 #include <event2/event-config.h>
 #include <event2/buffer.h>
 
-#include <zlib.h>
+//#include <zlib.h>
 #include <pthread.h>
 
 #define SITE_BUCKETS 30000
@@ -154,7 +151,5 @@ typedef struct dop_timer_s
     struct event* timer;
     struct timeval tv;
 } dop_timer_t;
-
-#include "http.h"
 
 #endif	/* __UTIL_H__ */
