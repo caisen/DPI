@@ -320,7 +320,6 @@ int http_parse_get(http_request_t *r, u_char *data)
 		
 		switch(buf[0])
 		{
-		    case 'h':
 			case 'H':
 				if ((sep - buf > 7) && buf[3] == 't' && buf[4] == ':')			//Host: man.chinaunix.net
 				{
@@ -341,7 +340,7 @@ int http_parse_get(http_request_t *r, u_char *data)
 					cnt++;
 				}
 				break;
-            case 'u':    
+                
 			case 'U':
                 if ((sep - buf > 12) && buf[5] == 'A' && buf[9] == 't' && buf[10] == ':')	//User-Agent: Mozilla/5.0 Firefox/21.0
 				{
@@ -361,7 +360,7 @@ int http_parse_get(http_request_t *r, u_char *data)
 					cnt++;
 				}
 				break;
-            case 'r':    
+                
 			case 'R':
 				if ((sep - buf > 10) && buf[6] == 'r' && buf[7] == ':')	//Referer: http://man.chinaunix.net/develop/c&c++/linux_c/default.htm
 				{
@@ -382,7 +381,7 @@ int http_parse_get(http_request_t *r, u_char *data)
 					cnt++;
 				}
 				break;
-            case 'c':    
+                
 			case 'C':
 				if ((sep - buf > 9) && buf[5] == 'e' && buf[6] == ':')	//Cookie: __utma=225341893.1493557647;
 				{

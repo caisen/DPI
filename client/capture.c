@@ -136,7 +136,6 @@ void* zsend(void* ptr)
     sndbuf_t* sndbuf = (sndbuf_t*)ptr;
     
     char* zbuf = (char*)MALLOC(char, MAX_PACKET_LEN);
-    memset(zbuf,'\0',MAX_PACKET_LEN);
     unsigned long snplen = compressBound(sndbuf->length);
     int ret = compress2(zbuf, &snplen, sndbuf->buffer, sndbuf->length, 9);
     if (ret == Z_OK)
