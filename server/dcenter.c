@@ -78,7 +78,7 @@ void release_sock_event(struct sock_ev* ev)
     free(ev);
 }
 
-void* uzrecv(sock_ev* ev)
+void* uzrecv(struct sock_ev* ev)
 {
 //    pthread_detach(pthread_self());
     
