@@ -1,12 +1,12 @@
-#ifndef __DAGENT_H__
-#define __DAGENT_H__
+#ifndef __DCENTER_H__
+#define __DCENTER_H__
 
 #include "util.h"
 
-#define DC_VERSION	20150708
+#define DC_VERSION	"1.0.0" 
 
-#define DA_LISTENPORT 9999
-#define DA_BACKLOG 5
+#define DC_LISTENPORT 9999
+#define DC_BACKLOG 5
 
 /* max packet length */
 #define MAX_PACKET_LEN 102400
@@ -22,15 +22,6 @@ struct sock_ev {
     int read_data_flag;
 };
 
-
-/* recv buffer */
-typedef struct rzbuf_s
-{
-    char* buffer;
-    unsigned int length;
-} rzbuf_t;
-
-
 /* dcenter connection */
 typedef struct dcenter_sock_s
 {
@@ -38,7 +29,6 @@ typedef struct dcenter_sock_s
     int sock_fd;
     BOOL status;
 } dcenter_sock_t;
-
 
 /* global cycle data */
 typedef struct dcenter_cycle_s
@@ -51,4 +41,4 @@ void dcenter_sock_init(void);
 void dcenter_sock(void);
 dcenter_cycle_t* cycle_init(void);
 
-#endif /* __dagent_H__ */
+#endif /* __DCENTER_H__ */

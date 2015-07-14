@@ -3,8 +3,29 @@
 dcenter_cycle_t *dcycle;
 struct event_base* base;
 
+void usage(char *prog)
+{
+    fprintf(stderr, "Version:%s \nUsage: %s\n", DC_VERSION, prog);
+    exit(-1);
+}
+
+
 int main(int argc, char *argv[])
 {   
+    int opt;
+    
+    while((opt = getopt(argc, argv, "v")) != -1)
+    {
+        switch(opt)
+        {
+            case 'v':
+                usage(argv[0]);
+                break;                
+            default:    /* '?' */
+                break;
+        }
+    }
+
     /* libevent thread */
     evthread_use_pthreads();
     
@@ -46,7 +67,7 @@ void dcenter_sock_init(void)
     struct sockaddr_in sockaddr;
     memset(&sockaddr, 0, sizeof(sockaddr));
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_port = htons(DA_LISTENPORT);
+    sockaddr.sin_port = htons(DC_LISTENPORT);
     sockaddr.sin_addr.s_addr = INADDR_ANY;
 
     int flag = 1;
@@ -57,7 +78,7 @@ void dcenter_sock_init(void)
 		printf("bind(): can not bind server socket.\n");
         exit(0);
     }
-	if(-1 == listen(sock->sock_fd, DA_BACKLOG)) 
+	if(-1 == listen(sock->sock_fd, DC_BACKLOG)) 
     {
         close(sock->sock_fd);
 		printf("listen(): can not listen server socket.\n");
@@ -78,7 +99,7 @@ void release_sock_event(struct sock_ev* ev)
     free(ev);
 }
 
-void* uzrecv(struct sock_ev* ev)
+void uzrecv(struct sock_ev* ev)
 {
 //    pthread_detach(pthread_self());
     
@@ -87,7 +108,7 @@ void* uzrecv(struct sock_ev* ev)
     char* uzbuf = (char*)MALLOC(char, MAX_PACKET_LEN);
     memset(uzbuf, '\0', MAX_PACKET_LEN);
     long uzlen = MAX_PACKET_LEN;
-    int ret = uncompress(uzbuf, &uzlen, ev->buffer+7, ev->data_len);
+    int ret = uncompress((Bytef *)uzbuf, (uLongf *)&uzlen,(Bytef *) ev->buffer+7, ev->data_len);
     if( ret == Z_OK)  
     { 
         printf("%s\n",uzbuf);
@@ -104,7 +125,6 @@ void* uzrecv(struct sock_ev* ev)
 
 void do_read(int sock, short event, void* arg)
 {
-    struct event* write_ev;
     int size;
     struct sock_ev* ev = (struct sock_ev*)arg;
 
@@ -156,7 +176,7 @@ void do_accept(int sock, short event, void* arg)
     ev->data_len = 0;
     ev->read_data_flag = 0;
     sin_size = sizeof(struct sockaddr_in);
-    newfd = accept(sock, (struct sockaddr*)&cli_addr, &sin_size);
+    newfd = accept(sock, (struct sockaddr*)&cli_addr, (socklen_t *)&sin_size);
     event_set(ev->read_ev, newfd, EV_READ|EV_PERSIST, do_read, ev);
     event_base_set(base, ev->read_ev);
     event_add(ev->read_ev, NULL);
