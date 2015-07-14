@@ -85,7 +85,8 @@ void* uzrecv(void* ptr)
     struct sock_ev* ev = (struct sock_ev*)ptr;
     
     char* uzbuf = (char*)MALLOC(char, MAX_PACKET_LEN);
-    long uzlen = 0;
+    memset(uzbuf, '\0', MAX_PACKET_LEN);
+    long uzlen = MAX_PACKET_LEN;
     int ret = uncompress(uzbuf, &uzlen, ev->buffer+7, ev->data_len);
     if( ret == Z_OK)  
     { 
@@ -93,9 +94,20 @@ void* uzrecv(void* ptr)
     }  
     else
     {
-        printf("zlib uncompress failed, len:%d status:%d :%s\n", ev->data_len, ret, ev->buffer+7);
+        int i = 0;
+        printf("zlib uncompress failed, len:%d status:%d\n", ev->data_len, ret, ev->buffer+7);
+        for(;i<ev->data_len+7; i++)
+        {
+            if(i%16==0)
+                printf("\n");
+            printf("%x ", ev->buffer+i);
+        }    
+        printf("\n");
     }
-    
+    //缓冲区中遗留的部分
+    memcpy(ev->buffer,ev->buffer+ev->data_len+7,ev->offset-ev->data_len-7);
+    ev->offset = ev->offset-ev->data_len-7;
+
     free(uzbuf);
         
 	pthread_exit(NULL);
@@ -119,15 +131,12 @@ void do_read(int sock, short event, void* arg)
     {
       ev->read_data_flag = 1;
       sscanf(ev->buffer, "%d\n", &ev->data_len);
-      printf("receive size:%d\n",ev->data_len);
+      ev->data_len=ev->data_len-1;
     }
     else if((ev->offset>(ev->data_len+7))&&(ev->read_data_flag==1))
     {
        pthread_t pt_uzrecv;
        pthread_create(&pt_uzrecv, NULL, uzrecv, ev);
-       
-       memcpy(ev->buffer,ev->buffer+ev->data_len+7,ev->offset-ev->data_len-7);
-       ev->offset = ev->offset-ev->data_len-7;
        ev->read_data_flag = 0;
     }
     else if(ev->offset>MEM_SIZE)
