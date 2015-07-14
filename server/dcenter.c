@@ -99,28 +99,30 @@ void release_sock_event(struct sock_ev* ev)
     free(ev);
 }
 
-void uzrecv(struct sock_ev* ev)
+void *uzrecv(void *ptr)
 {
-//    pthread_detach(pthread_self());
+    pthread_detach(pthread_self());
     
-//    struct sock_ev* ev = (struct sock_ev*)ptr;
+    rcvbuf_t* revbuf = (rcvbuf_t*)ptr;
     
     char* uzbuf = (char*)MALLOC(char, MAX_PACKET_LEN);
     memset(uzbuf, '\0', MAX_PACKET_LEN);
     long uzlen = MAX_PACKET_LEN;
-    int ret = uncompress((Bytef *)uzbuf, (uLongf *)&uzlen,(Bytef *) ev->buffer+7, ev->data_len);
+    int ret = uncompress((Bytef *)uzbuf, (uLongf *)&uzlen,(Bytef *) revbuf->buffer+7, revbuf->data_len);
     if( ret == Z_OK)  
     { 
         printf("%s\n",uzbuf);
     }  
     else
     {
-        printf("zlib uncompress failed, len:%d status:%d\n", ev->data_len, ret);
+        printf("zlib uncompress failed, len:%d status:%d\n", revbuf->data_len, ret);
     }
 
+    free(revbuf->buffer);
+    free(revbuf);
     free(uzbuf);
         
-//	pthread_exit(NULL);
+	pthread_exit(NULL);
 }
 
 void do_read(int sock, short event, void* arg)
@@ -128,7 +130,7 @@ void do_read(int sock, short event, void* arg)
     int size;
     struct sock_ev* ev = (struct sock_ev*)arg;
 
-    size = recv(sock, ev->buffer+ev->offset, MEM_SIZE-ev->offset, 0);
+    size = recv(sock, ev->buffer+ev->offset, MAX_PACKET_LEN-ev->offset, 0);
     if (size == 0) {
         release_sock_event(ev);
         close(sock);
@@ -138,23 +140,29 @@ void do_read(int sock, short event, void* arg)
     ev->offset += size;
     if((ev->offset>7)&& ev->read_data_flag==0)
     {
+    //读取长度
       ev->read_data_flag = 1;
       sscanf(ev->buffer, "%d\n", &ev->data_len);
       ev->data_len=ev->data_len-1;
     }
-    else if((ev->offset>(ev->data_len+7))&&(ev->read_data_flag==1))
+    else if((ev->offset>=(ev->data_len+7))&&(ev->read_data_flag==1))
     {
-//       pthread_t pt_uzrecv;
-//       pthread_create(&pt_uzrecv, NULL, uzrecv, ev);
+        rcvbuf_t* rcvbuf = (rcvbuf_t*)MALLOC(rcvbuf_t, 1);
+        rcvbuf->buffer = ev->buffer;
+        rcvbuf->data_len = ev->data_len;
+        rcvbuf->offset = ev->offset;
 
-       uzrecv(ev);
-       //缓冲区中遗留的部分
-       memcpy(ev->buffer,ev->buffer+ev->data_len+7,ev->offset-ev->data_len-7);
-       ev->offset = ev->offset-ev->data_len-7;
+        ev->buffer = (char*)malloc(MAX_PACKET_LEN);
+        //缓冲区中遗留的部分
+        ev->offset = rcvbuf->offset-rcvbuf->data_len-7;
+        memcpy(ev->buffer,rcvbuf->buffer+rcvbuf->data_len+7,ev->offset);
+        ev->read_data_flag = 0;
 
-       ev->read_data_flag = 0;
+       //解压缩
+       pthread_t pt_uzrecv;
+       pthread_create(&pt_uzrecv, NULL, uzrecv, rcvbuf);
     }
-    else if(ev->offset>MEM_SIZE)
+    else if(ev->offset>MAX_PACKET_LEN)
     {
        release_sock_event(ev);
        close(sock);
@@ -170,8 +178,8 @@ void do_accept(int sock, short event, void* arg)
     struct sock_ev* ev = (struct sock_ev*)malloc(sizeof(struct sock_ev));
     ev->read_ev = (struct event*)malloc(sizeof(struct event));
     ev->write_ev = (struct event*)malloc(sizeof(struct event));
-    ev->buffer = (char*)malloc(MEM_SIZE);
-    bzero(ev->buffer, MEM_SIZE);
+    ev->buffer = (char*)malloc(MAX_PACKET_LEN);
+    bzero(ev->buffer, MAX_PACKET_LEN);
     ev->offset = 0;
     ev->data_len = 0;
     ev->read_data_flag = 0;

@@ -127,11 +127,12 @@ char* ip_buf_ntos(char *buf, u_int32_t n);
 char* http_find_header(char* uri, char* key, char* buf);
 
 /* site */
-typedef struct sndbuf_s
+typedef struct rcvbuf_s
 {
     char* buffer;
-    unsigned int length;
-} sndbuf_t;
+    int offset;
+    int data_len;
+} rcvbuf_t;
 
 /* site */
 typedef struct site_s

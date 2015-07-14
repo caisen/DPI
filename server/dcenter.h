@@ -3,7 +3,7 @@
 
 #include "util.h"
 
-#define DC_VERSION	"1.0.0" 
+#define DC_VERSION	"1.1.0" 
 
 #define DC_LISTENPORT 9999
 #define DC_BACKLOG 5
