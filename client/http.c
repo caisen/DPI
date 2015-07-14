@@ -80,8 +80,8 @@ BOOL http_detect_filter_host(const char *host)
 
 BOOL http_detect_type(u_char *data, int datalen)
 {
-    u_char* buf = data;
-	u_char *sep = NULL;
+    char* buf = (char *)data;
+	char *sep = NULL;
     
 	if (datalen >= 2)
 	{
@@ -112,7 +112,7 @@ BOOL http_detect_type(u_char *data, int datalen)
 	}
     
 	//detect URI
-	sep = strchr(data, '.');
+	sep = strchr((char *)data, '.');
 	if (sep == 0)
 		return TRUE;
     
@@ -139,8 +139,8 @@ BOOL http_detect_type(u_char *data, int datalen)
 
 BOOL http_detect_mime_type(http_request_t* r)
 {
-    u_char* buf = r->uri;
-	u_char *sep = NULL;
+    char* buf = r->uri;
+	char *sep = NULL;
     
     buf = r->uri + r->uri_len - 3;
     
@@ -279,8 +279,8 @@ int http_parse_get(http_request_t *r, u_char *data)
     r->cookie_len = 0;
     r->proxy = FALSE;
     
-    u_char* buf = data;
-	u_char *sep = NULL;
+    char* buf = (char *)data;
+	char *sep = NULL;
 	int len = 0, flag = 0;
 	unsigned int cnt = 0;
 	buf += 4;
@@ -320,6 +320,7 @@ int http_parse_get(http_request_t *r, u_char *data)
 		
 		switch(buf[0])
 		{
+		    case 'h':
 			case 'H':
 				if ((sep - buf > 7) && buf[3] == 't' && buf[4] == ':')			//Host: man.chinaunix.net
 				{
@@ -340,7 +341,7 @@ int http_parse_get(http_request_t *r, u_char *data)
 					cnt++;
 				}
 				break;
-                
+            case 'u':    
 			case 'U':
                 if ((sep - buf > 12) && buf[5] == 'A' && buf[9] == 't' && buf[10] == ':')	//User-Agent: Mozilla/5.0 Firefox/21.0
 				{
@@ -360,7 +361,7 @@ int http_parse_get(http_request_t *r, u_char *data)
 					cnt++;
 				}
 				break;
-                
+            case 'r':    
 			case 'R':
 				if ((sep - buf > 10) && buf[6] == 'r' && buf[7] == ':')	//Referer: http://man.chinaunix.net/develop/c&c++/linux_c/default.htm
 				{
@@ -381,7 +382,7 @@ int http_parse_get(http_request_t *r, u_char *data)
 					cnt++;
 				}
 				break;
-                
+            case 'c':    
 			case 'C':
 				if ((sep - buf > 9) && buf[5] == 'e' && buf[6] == ':')	//Cookie: __utma=225341893.1493557647;
 				{

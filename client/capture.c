@@ -137,8 +137,8 @@ void* zsend(void* ptr)
     
     char* zbuf = (char*)MALLOC(char, MAX_PACKET_LEN);
     memset(zbuf,'\0',MAX_PACKET_LEN);
-    unsigned long snplen = compressBound(sndbuf->length);
-    int ret = compress2(zbuf, &snplen, sndbuf->buffer, sndbuf->length, 9);
+    int snplen = compressBound(sndbuf->length);
+    int ret = compress2((Bytef *)zbuf, (uLongf *)&snplen, (Bytef *)sndbuf->buffer, sndbuf->length, 9);
     if (ret == Z_OK)
     {
         /* send packet header */

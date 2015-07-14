@@ -32,14 +32,14 @@ int main(int argc, char *argv[])
                 break;
                 
             default:	/* '?' */
-                printf("dagent version:%d \nusage: %s -h sync_host -p sync_port -i ethx -f pcap_file \n", DA_VERSION, argv[0]);
+                printf("dagent version:%s \nusage: %s -h sync_host -p sync_port -i ethx -f pcap_file \n", DA_VERSION, argv[0]);
                 return 1;
 		}
 	}
 
 	if (host == NULL || port <= 0 || (interface == NULL && pcap_file == NULL))
 	{
-        printf("dagent version:%d \nusage: %s -h sync_host -p sync_port -i ethx -f pcap_file \n", DA_VERSION, argv[0]);
+        printf("dagent version:%s \nusage: %s -h sync_host -p sync_port -i ethx -f pcap_file \n", DA_VERSION, argv[0]);
 		return 1;
 	}
     
@@ -124,6 +124,7 @@ void* health(void* ptr)
     evtimer_add(tt->timer, &(tt->tv));
     
     event_base_dispatch(eb);
+    return 0;
 }
 
 
