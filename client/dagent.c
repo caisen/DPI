@@ -8,7 +8,6 @@ int main(int argc, char *argv[])
     char* host = NULL;
     short port = 0;
 	char* interface = NULL;
-    char* pcap_file = NULL;
     
     int opt;
 	while((opt = getopt(argc, argv, "i:p:P:h:m:tSf:")) != -1)
@@ -27,19 +26,15 @@ int main(int argc, char *argv[])
                 port = (short)atoi(optarg);
                 break;
                 
-            case 'f':
-                pcap_file = strdup(optarg);
-                break;
-                
             default:	/* '?' */
-                printf("dagent version:%s \nusage: %s -h sync_host -p sync_port -i ethx -f pcap_file \n", DA_VERSION, argv[0]);
+                printf("dagent version:%s \nusage: %s -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
                 return 1;
 		}
 	}
 
-	if (host == NULL || port <= 0 || (interface == NULL && pcap_file == NULL))
+	if (host == NULL || port <= 0 || (interface == NULL))
 	{
-        printf("dagent version:%s \nusage: %s -h sync_host -p sync_port -i ethx -f pcap_file \n", DA_VERSION, argv[0]);
+        printf("dagent version:%s \nusage: %s -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
 		return 1;
 	}
     
@@ -48,7 +43,6 @@ int main(int argc, char *argv[])
     
     dcycle = cycle_init();
     dcycle->interface = (interface != NULL) ? strdup(interface) : NULL;
-    dcycle->pcap_file = (pcap_file != NULL) ? strdup(pcap_file) : NULL;
     
     /* set work mode */
     dcycle->port = port;

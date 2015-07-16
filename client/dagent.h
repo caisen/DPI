@@ -5,7 +5,7 @@
 
 #define SAMPLE_HOST_FILE "/etc/dagent.conf"
 
-#define DA_VERSION	"1.0.0" 
+#define DA_VERSION	"1.0.1" 
 
 /* pcap filter config */
 #define DA_FILTER     "greater 100 and tcp dst port 80"
