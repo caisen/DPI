@@ -108,7 +108,7 @@ void dcenter_packet(http_request_t* req)
     int len = sprintf(buf, "%s\t%s\t%s\thttp://%s%s\t%s\t%s\t%s\t%ld\n", req->saddr_str, req->daddr_str, req->host, req->host, req->uri, req->referer, req->user_agent, req->cookie, dcycle->timestamp);
     
     dcycle->length = dcycle->length + len;
-    if (dcycle->length >= (MAX_PACKET_LEN - 1024))
+    if (dcycle->length >= (MAX_PACKET_LEN - 4096))
     {
         sndbuf_t* sndbuf = (sndbuf_t*)MALLOC(sndbuf_t, 1);
         sndbuf->buffer = dcycle->buffer;

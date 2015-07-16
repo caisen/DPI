@@ -278,6 +278,7 @@ int http_parse_get(http_request_t *r, u_char *data)
     r->referer_len = 0;
     r->cookie_len = 0;
     r->proxy = FALSE;
+    r->user_agent_len = 0;
     
     char* buf = (char *)data;
 	char *sep = NULL;
@@ -353,6 +354,7 @@ int http_parse_get(http_request_t *r, u_char *data)
                     if (len < MAX_AGENT_LEN)
                     {
                         bzero(r->user_agent, MAX_AGENT_LEN);
+                        r->user_agent_len = len;
                         
                         *(r->user_agent + len) = '\0';
                         memcpy(r->user_agent, buf, len);
@@ -402,7 +404,7 @@ int http_parse_get(http_request_t *r, u_char *data)
 					cnt++;
 				}
 				break;
-                
+ #if 0               
 			case 'X':
             case 'x':
 				if ((sep - buf > 30) && (buf[2] == 'r' || buf[2] == 'R') && buf[16] == ':')	//X-Requested-With: XMLHttpRequest\r\n
@@ -441,6 +443,7 @@ int http_parse_get(http_request_t *r, u_char *data)
 					cnt++;
 				}
 				break;
+#endif
 		}
         
         if (flag == 1)

@@ -41,6 +41,7 @@ typedef struct http_request_s
     unsigned int    cookie_len;
     
 	char*			user_agent;
+    unsigned int    user_agent_len;
     
 	char*           saddr_str;
     char*           daddr_str;
