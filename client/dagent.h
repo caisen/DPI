@@ -3,7 +3,7 @@
 
 #include "util.h"
 
-#define DA_VERSION	"1.0.4" 
+#define DA_VERSION	"1.0.5" 
 
 /* pcap filter config */
 #define DA_FILTER     "greater 100 and tcp dst port 80"
@@ -45,7 +45,7 @@ typedef struct dagent_cycle_s
     char* buffer;
     unsigned int length;
     
-	regex_t reg_host;
+	regex_t reg_url;
     dcenter_sock_t *socks;
     
     http_request_t *req;

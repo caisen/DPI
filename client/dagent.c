@@ -97,6 +97,7 @@ dagent_cycle_t* cycle_init()
     dcycle->req->host = (char *)MALLOC(char, MAX_HOST_LEN);
     dcycle->req->referer = (char *)MALLOC(char, MAX_REF_LEN);
     dcycle->req->uri = (char *)MALLOC(char, MAX_URI_LEN);
+    dcycle->req->url = (char *)MALLOC(char, MAX_URI_LEN);
     dcycle->req->user_agent = (char *)MALLOC(char, MAX_AGENT_LEN);
     dcycle->req->x_requested_with = (char *)MALLOC(char, MAX_REQ_WITH_LEN);
     dcycle->req->cookie = (char *)MALLOC(char, MAX_COOKIE_LEN);
@@ -272,7 +273,7 @@ void load_host_sample()
 
     while (fgets(p, 1024, fp))
     {
-        if(STREQ(p, "host="))
+        if(STREQ(p, "url="))
         {
             p+=5;
         }
@@ -281,13 +282,13 @@ void load_host_sample()
 
     if(strlen(p)==0)
     {
-        printf("Dagent.conf does not contain [host=] !\n");
+        printf("Dagent.conf does not contain [url=] !\n");
         exit(0);
     }
     
-    if (0 != regcomp(&dcycle->reg_host, p, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) 
+    if (0 != regcomp(&dcycle->reg_url, p, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) 
     {
-        printf("Regcomp host faild!\n");
+        printf("Regcomp url faild!\n");
         exit(0);
     }
 

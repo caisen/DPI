@@ -33,6 +33,9 @@ typedef struct http_request_s
     
 	char*			uri;
 	unsigned int	uri_len;
+
+    char*           url;
+    unsigned int	url_len;
     
 	char*			referer;
     unsigned int    referer_len;

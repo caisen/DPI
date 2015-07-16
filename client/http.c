@@ -18,6 +18,9 @@ http_request_t* http_new_request(void)
 	
 	r->uri = NULL;
 	r->uri_len = 0;
+
+	r->url = NULL;
+	r->url_len = 0;
     
 	r->user_agent = NULL;
     r->x_requested_with = NULL;
@@ -451,7 +454,14 @@ int http_parse_get(http_request_t *r, u_char *data)
         
 		buf = sep;
 	}
-    
+
+    strcpy(r->url, r->host);
+    if (strcmp(r->uri, "/") != 0) 
+    {
+       strcat(r->url, r->uri);
+    }
+    r->url_len = strlen(r->url);
+
 	return 1;
 }
 
