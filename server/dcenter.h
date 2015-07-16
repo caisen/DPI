@@ -3,9 +3,7 @@
 
 #include "util.h"
 
-#define DC_VERSION	"1.1.0" 
-
-#define DC_LISTENPORT 9999
+#define DC_VERSION	"1.2.0" 
 #define DC_BACKLOG 5
 
 /* max packet length */
@@ -35,6 +33,10 @@ typedef struct dcenter_cycle_s
 {
     dcenter_sock_t *socks;
     pthread_mutex_t mutex;
+    char *path;
+    short lport;
+    FILE *record_fd;
+    char *date;
 } dcenter_cycle_t;
 
 void dcenter_sock_init(void);

@@ -9,30 +9,79 @@ void usage(char *prog)
     exit(-1);
 }
 
+void open_record_file()
+{
+	char fn[128] = {0};
+    time_t ct;
+
+	time(&ct);
+	strftime(dcycle->date, 16, "%Y%m%d", localtime(&ct));
+	sprintf(fn, "%s/%s", dcycle->path, dcycle->date);
+	dcycle->record_fd = fopen(fn, "a");
+	if (dcycle->record_fd == NULL)
+	{
+		printf("Failed to open %s.\n", fn);
+		exit(-1);
+	}
+}
+
+void  do_fp_cycle()
+{
+	FILE *old_fp = dcycle->record_fd;
+    time_t ct;
+    char ts[15]={0};
+    
+    time(&ct);
+    strftime(ts, 16, "%Y%m%d", localtime(&ct));
+
+    if(strncmp(ts,dcycle->date,8))//日期不同
+    {
+        open_record_file();
+        fclose(old_fp);
+    }
+}
 
 int main(int argc, char *argv[])
-{   
-    int opt;
+{
+    short port = 0;
+    char *path;
     
-    while((opt = getopt(argc, argv, "v")) != -1)
-    {
-        switch(opt)
-        {
-            case 'v':
-                usage(argv[0]);
-                break;                
-            default:    /* '?' */
+    int opt;
+	while((opt = getopt(argc, argv, "f:p:P:h:m:tSf:")) != -1)
+	{
+		switch(opt)
+		{
+            case 'f':
+                path = strdup(optarg);
                 break;
-        }
-    }
+                
+            case 'p':
+                port = (short)atoi(optarg);
+                break;
+                
+            default:	/* '?' */
+                printf("dcenter version:%s \nusage: %s -f save_file_path -p listen_port \n", DC_VERSION, argv[0]);
+                return 1;
+		}
+	}
+
+	if (path == NULL || port <= 0)
+	{
+        printf("dcenter version:%s \nusage: %s -f save_file_path -p listen_port \n", DC_VERSION, argv[0]);
+		return 1;
+	}
 
     /* libevent thread */
     evthread_use_pthreads();
     
     dcycle = cycle_init();
+    dcycle->path = (path != NULL) ? strdup(path) : NULL;
+    dcycle->lport = port;
     
     /* signal process */
     signal(SIGPIPE, SIG_IGN);
+
+    open_record_file();
     
     /* init dcenter sock */
     dcenter_sock_init();
@@ -50,12 +99,25 @@ dcenter_cycle_t* cycle_init()
     
     /* init dcenter socket */
     dcycle->socks = NULL;
+
+    dcycle->record_fd = NULL;
+
+    dcycle->date = MALLOC(char,16);
    
     /* init mutex */
 	pthread_mutex_t blank_mutex = PTHREAD_MUTEX_INITIALIZER;
 	memcpy(&dcycle->mutex, &blank_mutex, sizeof(dcycle->mutex));
     
     return dcycle;
+}
+
+void do_record(char* uzbuf, long uzlen)
+{
+    do_fp_cycle();
+    fwrite(uzbuf,uzlen,1,dcycle->record_fd);
+    pthread_mutex_lock(&dcycle->mutex);  
+    fflush(dcycle->record_fd);
+    pthread_mutex_unlock(&dcycle->mutex);
 }
 
 void dcenter_sock_init(void)
@@ -67,7 +129,7 @@ void dcenter_sock_init(void)
     struct sockaddr_in sockaddr;
     memset(&sockaddr, 0, sizeof(sockaddr));
     sockaddr.sin_family = AF_INET;
-    sockaddr.sin_port = htons(DC_LISTENPORT);
+    sockaddr.sin_port = htons(dcycle->lport);
     sockaddr.sin_addr.s_addr = INADDR_ANY;
 
     int flag = 1;
@@ -111,7 +173,8 @@ void *uzrecv(void *ptr)
     int ret = uncompress((Bytef *)uzbuf, (uLongf *)&uzlen,(Bytef *) revbuf->buffer+7, revbuf->data_len);
     if( ret == Z_OK)  
     { 
-        printf("%s\n",uzbuf);
+        //printf("%s\n",uzbuf);
+        do_record(uzbuf, uzlen);
     }  
     else
     {
@@ -194,12 +257,11 @@ void dcenter_sock(void)
 {
     dcenter_sock_t* sock = dcycle->socks;
     struct event listen_ev;
-
+        
     base = event_base_new();
     event_set(&listen_ev, sock->sock_fd, EV_READ|EV_PERSIST, do_accept, NULL);
     event_base_set(base, &listen_ev);
     event_add(&listen_ev, NULL);
     event_base_dispatch(base);
-
 }
 
