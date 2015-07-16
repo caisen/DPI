@@ -11,10 +11,7 @@ int capture(const char* interface, const char* filter)
 	char errbuf[PCAP_ERRBUF_SIZE];
 	memset(errbuf, 0, PCAP_ERRBUF_SIZE);
     
-    if (dcycle->pcap_file != NULL)
-        cap = pcap_open_offline(dcycle->pcap_file, errbuf);
-    else
-        cap = pcap_open_live(interface, 65535, 1, 1000, errbuf);
+    cap = pcap_open_live(interface, 65535, 1, 1000, errbuf);
     
 	if( cap == NULL)
 		exit(1);

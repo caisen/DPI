@@ -3,7 +3,7 @@
 
 #include "util.h"
 
-#define DC_VERSION	"1.2.0" 
+#define DC_VERSION	"1.2.1" 
 #define DC_BACKLOG 5
 
 /* max packet length */
