@@ -5,7 +5,7 @@
 
 /* http request fieled lentgh */
 #define MAX_HOST_LEN        128
-#define MAX_URI_LEN         1024
+#define MAX_URI_LEN         4096
 #define MAX_AGENT_LEN       1024
 #define MAX_REF_LEN         1024
 #define MAX_COOKIE_LEN      4096
