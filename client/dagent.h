@@ -3,9 +3,7 @@
 
 #include "util.h"
 
-#define SAMPLE_HOST_FILE "/etc/dagent.conf"
-
-#define DA_VERSION	"1.0.1" 
+#define DA_VERSION	"1.0.2" 
 
 /* pcap filter config */
 #define DA_FILTER     "greater 100 and tcp dst port 80"
@@ -42,7 +40,7 @@ typedef struct dagent_cycle_s
     char* host;
     
     char* interface;
-    char* pcap_file;
+    char* conf;
     
     char* buffer;
     unsigned int length;

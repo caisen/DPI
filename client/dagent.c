@@ -8,12 +8,16 @@ int main(int argc, char *argv[])
     char* host = NULL;
     short port = 0;
 	char* interface = NULL;
+    char* conf;
     
     int opt;
-	while((opt = getopt(argc, argv, "i:p:P:h:m:tSf:")) != -1)
+	while((opt = getopt(argc, argv, "c:i:p:P:h:m:tSf:")) != -1)
 	{
 		switch(opt)
 		{
+		    case 'c':
+                conf = strdup(optarg);
+                break;
             case 'i':
                 interface = strdup(optarg);
                 break;
@@ -27,14 +31,14 @@ int main(int argc, char *argv[])
                 break;
                 
             default:	/* '?' */
-                printf("dagent version:%s \nusage: %s -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
+                printf("dagent version:%s \nusage: %s -c conf_file -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
                 return 1;
 		}
 	}
 
 	if (host == NULL || port <= 0 || (interface == NULL))
 	{
-        printf("dagent version:%s \nusage: %s -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
+        printf("dagent version:%s \nusage: %s -c conf_file -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
 		return 1;
 	}
     
@@ -43,6 +47,7 @@ int main(int argc, char *argv[])
     
     dcycle = cycle_init();
     dcycle->interface = (interface != NULL) ? strdup(interface) : NULL;
+    dcycle->conf = (conf != NULL) ? strdup(conf) : NULL;
     
     /* set work mode */
     dcycle->port = port;
@@ -258,7 +263,7 @@ void load_host_sample()
     char *p = line;
     
     bzero(p, 1024);
-    fp = fopen(SAMPLE_HOST_FILE, "r");
+    fp = fopen(dcycle->conf, "r");
     if (fp == NULL)
     {
         printf("Open dagent.conf failed!\n");
