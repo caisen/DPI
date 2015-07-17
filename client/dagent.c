@@ -260,6 +260,7 @@ void load_host_sample()
 {
     FILE * fp = NULL;
     char* line = (char*)malloc(1024);
+    char buf[1024] = {0};
 
     char *p = line;
     
@@ -275,18 +276,18 @@ void load_host_sample()
     {
         if(STREQ(p, "url="))
         {
-            p+=5;
+            sscanf(p, "url=%s\n", buf);
         }
         break;
     }
 
-    if(strlen(p)==0)
+    if(strlen(buf)==0)
     {
         printf("Dagent.conf does not contain [url=] !\n");
         exit(0);
     }
     
-    if (0 != regcomp(&dcycle->reg_url, p, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) 
+    if (0 != regcomp(&dcycle->reg_url, buf, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) 
     {
         printf("Regcomp url faild!\n");
         exit(0);
