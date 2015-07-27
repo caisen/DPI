@@ -128,7 +128,8 @@ void core(u_char *param, const struct pcap_pkthdr *pkthdr, const u_char *raw_dat
 void dcenter_packet(http_request_t* req)
 {   
     char* buf = dcycle->buffer + dcycle->length;
-    int len = sprintf(buf, "%s\t%s\t%s\thttp://%s\t%s\t%s\t%s\t%ld\n", req->saddr_str, req->daddr_str, req->host, req->url, req->referer, req->user_agent, req->cookie, dcycle->timestamp);
+    //int len = sprintf(buf, "%s\t%s\t%s\thttp://%s\t%s\t%s\t%s\t%ld\n", req->saddr_str, req->daddr_str, req->host, req->url, req->referer, req->user_agent, req->cookie, dcycle->timestamp);
+    int len = sprintf(buf, "http://%s\n", req->url);
     
     dcycle->length = dcycle->length + len;
     if (dcycle->length >= (MAX_PACKET_LEN - 4096))
