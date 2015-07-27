@@ -7,7 +7,7 @@ CFLAGS = -Wall -g -O0
 LDFLAGS = -L/usr/lib64 -L/usr/lib -L/usr/local/lib/ /usr/local/lib/libpcap.a  /usr/local/lib/libpfring.a -lnet -lrt -lpthread -levent -levent_pthreads -lnuma -lz
 
 TARGET=dagent
-OBJS=capture.o  dagent.o  http.o  util.o
+OBJS=capture.o  dagent.o  http.o  hash.o util.o
 
 $(TARGET):$(OBJS)
 	gcc  -o $(TARGET) $(OBJS) $(LDFLAGS)

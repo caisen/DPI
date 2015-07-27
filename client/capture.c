@@ -1,5 +1,6 @@
 #include "dagent.h"
 #include "capture.h"
+#include "hash.h"
 
 extern dagent_cycle_t *dcycle;
 
@@ -41,6 +42,7 @@ void core(u_char *param, const struct pcap_pkthdr *pkthdr, const u_char *raw_dat
 {
     u_char 	*cp = (u_char *)raw_data;   
 	struct ether_header *eth_hdr = (struct ether_header *) cp;
+    int status = 0;
     
     /* only IP or PPP */
     u_int16_t ether_type = ntohs(eth_hdr->ether_type);
@@ -85,14 +87,35 @@ void core(u_char *param, const struct pcap_pkthdr *pkthdr, const u_char *raw_dat
         /* ignore no need type */
         if(http_detect_mime_type(req) == FALSE && http_detect_filter_uri(req->uri) == FALSE && http_detect_filter_host(req->host) == FALSE)
             return;
-        
-        /* check host and domain */
-        int status = regexec(&dcycle->reg_url, req->url, 0, NULL, 0);
+
+        /* 依据host为关键字在hash表中搜寻规则 */
+        regex_t *reg_url = NULL;
+        hashmap_entry_by_key((*dcycle).hashmap, req->host, (void **)&reg_url);
+        if (NULL == reg_url)
+        {
+            /* 根据host关键字未找到相应的规则，在默认规则中第二次查找 */
+            hashmap_entry_by_key((*dcycle).hashmap, "null", (void **)&reg_url);
+            if (NULL == reg_url)
+            {
+                return;
+            }
+        }
+        status = regexec(reg_url, req->url, 0, NULL, 0);
         if (REG_NOMATCH == status)
         {
             return;
         }
 
+        /* check white_list */
+        if(dcycle->white_url_flag)
+        {
+            status = regexec(&dcycle->reg_white_url, req->url, 0, NULL, 0);
+            if (REG_NOMATCH != status)
+            {
+                return;
+            }           
+        }
+    
         ip_buf_ntos(req->saddr_str, ntohl(ip->ip_src.s_addr));
         ip_buf_ntos(req->daddr_str, ntohl(ip->ip_dst.s_addr));
             

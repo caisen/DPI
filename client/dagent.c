@@ -107,7 +107,12 @@ dagent_cycle_t* cycle_init()
     /* init mutex */
 	pthread_mutex_t blank_mutex = PTHREAD_MUTEX_INITIALIZER;
 	memcpy(&dcycle->mutex, &blank_mutex, sizeof(dcycle->mutex));
-    
+
+    //白名单过滤开关默认关闭
+    dcycle->white_url_flag = FALSE;
+
+    /* 快速匹配的hash表 */
+    dcycle->hashmap = hashmap_create(MAX_BUCKETS);
     return dcycle;
 }
 
@@ -259,12 +264,13 @@ dcenter_sock_t* pick_dcenter_sock(void)
 void load_host_sample()
 {
     FILE * fp = NULL;
-    char* line = (char*)malloc(1024);
-    char buf[1024] = {0};
+    char line[MAX_BUFFER_LEN] = {0};
+    char host[MAX_BUFFER_LEN] = {0};
+    char url[MAX_BUFFER_LEN] = {0};
+    char white_url[MAX_BUFFER_LEN] = {0};
 
     char *p = line;
     
-    bzero(p, 1024);
     fp = fopen(dcycle->conf, "r");
     if (fp == NULL)
     {
@@ -272,28 +278,49 @@ void load_host_sample()
         exit(0);
     }
 
-    while (fgets(p, 1024, fp))
+    while (fgets(p, MAX_BUFFER_LEN, fp))
     {
-        if(STREQ(p, "url="))
+        if(STREQ(p, "host="))
         {
-            sscanf(p, "url=%s\n", buf);
+            memset(host,'\0',MAX_BUFFER_LEN);
+            memset(url,'\0',MAX_BUFFER_LEN);
+            sscanf(p, "host=%s url=%s\n", host, url);
+            if(strlen(host)==0||strlen(url)==0)
+            {
+                printf("Line should not be empty: [%s]\n",p);
+                continue;
+            }
+
+            regex_t reg_url;
+            if (0 != regcomp(&reg_url, url, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) 
+            {
+                printf("Regcomp url faild: [%s]\n",p);
+                continue;
+            }
+
+            hashmap_insert(dcycle->hashmap, host, &reg_url, sizeof(regex_t));
         }
-        break;
+        else if(STREQ(p, "white_url="))
+        {
+            memset(white_url,'\0',MAX_BUFFER_LEN);
+            sscanf(p, "white_url=%s\n", white_url);
+            if((strlen(white_url)==0)||(0 != regcomp(&dcycle->reg_white_url, white_url, (REG_EXTENDED|REG_ICASE|REG_NOSUB))))
+            {
+                printf("Line is empty or error: [%s]\n",p);
+                continue;
+            }
+            else
+            {
+                dcycle->white_url_flag = TRUE;
+            }
+        }
+        else
+        {
+            ;
+        }
+        
     }
 
-    if(strlen(buf)==0)
-    {
-        printf("Dagent.conf does not contain [url=] !\n");
-        exit(0);
-    }
-    
-    if (0 != regcomp(&dcycle->reg_url, buf, (REG_EXTENDED|REG_ICASE|REG_NOSUB))) 
-    {
-        printf("Regcomp url faild!\n");
-        exit(0);
-    }
-
-    free(line);
     fclose(fp);
 }
 

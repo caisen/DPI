@@ -456,10 +456,11 @@ int http_parse_get(http_request_t *r, u_char *data)
 	}
 
     strcpy(r->url, r->host);
-    if (strcmp(r->uri, "/") != 0) 
-    {
-       strcat(r->url, r->uri);
-    }
+    strcat(r->url, r->uri);
+//    if (strcmp(r->uri, "/") != 0) 
+//    {
+//       strcat(r->url, r->uri);
+//    }
     r->url_len = strlen(r->url);
 
 	return 1;
