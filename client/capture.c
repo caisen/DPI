@@ -118,14 +118,21 @@ void core(u_char *param, const struct pcap_pkthdr *pkthdr, const u_char *raw_dat
     
         ip_buf_ntos(req->saddr_str, ntohl(ip->ip_src.s_addr));
         ip_buf_ntos(req->daddr_str, ntohl(ip->ip_dst.s_addr));
-            
-        dcenter_packet(req);
+        if(dcycle->udp_flag==1)
+        {
+        	dcenter_udp_packet(req);
+        }
+		else
+		{
+			dcenter_tcp_packet(req);
+		}
+        
     }
 }
 
 
 /* 账号\t源IP\t源端口\tIP_ID\t目的IP\tURL\tREF\tUA\tCookie\t时间戳 */
-void dcenter_packet(http_request_t* req)
+void dcenter_tcp_packet(http_request_t* req)
 {   
     char* buf = dcycle->buffer + dcycle->length;
     int len = sprintf(buf, "%s\t%s\t%s\thttp://%s\t%s\t%s\t%s\t%ld\n", req->saddr_str, req->daddr_str, req->host, req->url, req->referer, req->user_agent, req->cookie, dcycle->timestamp);
@@ -141,11 +148,41 @@ void dcenter_packet(http_request_t* req)
         dcycle->length = 0;
         dcycle->buffer = (char*)MALLOC(char, MAX_PACKET_LEN);
         
-        pthread_t pt_zsend;
+		pthread_t pt_zsend;
         pthread_create(&pt_zsend, NULL, zsend, sndbuf);
     }
 }
 
+void dcenter_udp_packet(http_request_t* req)
+{   
+    dcycle->length = sprintf(dcycle->buffer, "%s\n%s\n%s", req->saddr_str, req->url, req->user_agent);
+	pthread_t pt_udp_send;
+   	pthread_create(&pt_udp_send, NULL, udp_send, dcycle->buffer);
+}
+
+void* udp_send(void* ptr)
+{
+    pthread_detach(pthread_self());
+    
+    dcenter_sock_t* sock = pick_dcenter_sock();
+    
+	/* send data */
+	struct sockaddr_in sockaddr;
+	sockaddr.sin_family = AF_INET;
+	sockaddr.sin_port = htons(dcycle->port);
+	sockaddr.sin_addr.s_addr = inet_addr(dcycle->host);
+
+	if (sendto(sock->sock_fd, ptr, dcycle->length, 0,(struct sockaddr *)&sockaddr,sizeof(sockaddr)) == -1)
+	{
+		sock->sock_fd = -1;
+		sock->status = FALSE;
+	}  
+    
+    /* set idle */
+    sock->idle = TRUE;
+        
+	pthread_exit(NULL);
+}
 
 void* zsend(void* ptr)
 {

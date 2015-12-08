@@ -9,9 +9,10 @@ int main(int argc, char *argv[])
     short port = 0;
 	char* interface = NULL;
     char* conf;
+	int udp_flag = 0;
     
     int opt;
-	while((opt = getopt(argc, argv, "c:i:p:P:h:m:tSf:")) != -1)
+	while((opt = getopt(argc, argv, "u:c:i:p:P:h:m:tSf:")) != -1)
 	{
 		switch(opt)
 		{
@@ -29,6 +30,10 @@ int main(int argc, char *argv[])
             case 'p':
                 port = (short)atoi(optarg);
                 break;
+			case 'u':
+					udp_flag = 1;
+					break;
+
                 
             default:	/* '?' */
                 printf("dagent version:%s \nusage: %s -c conf_file -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
@@ -46,6 +51,7 @@ int main(int argc, char *argv[])
     evthread_use_pthreads();
     
     dcycle = cycle_init();
+	dcycle->udp_flag = udp_flag;
     dcycle->interface = (interface != NULL) ? strdup(interface) : NULL;
     dcycle->conf = (conf != NULL) ? strdup(conf) : NULL;
     
@@ -60,7 +66,14 @@ int main(int argc, char *argv[])
     load_host_sample();
     
     /* init dcenter sock */
-    dcenter_sock_init();
+	if(dcycle->udp_flag==1)
+	{
+		dcenter_sock_udp_init();
+	}
+	else
+	{
+		dcenter_sock_tcp_init();
+	}
     
 	pthread_t pt_health;
 	pthread_create(&pt_health, NULL, health, NULL);
@@ -151,18 +164,23 @@ void dcenter_health_check(int fd, short event, void* arg)
             if (sock->sock_fd != -1)
                 close(sock->sock_fd);
             
-            sock->sock_fd = socket(AF_INET, SOCK_STREAM, 0);
             
-            struct sockaddr_in sockaddr;
-            sockaddr.sin_family = AF_INET;
-            sockaddr.sin_port = htons(dcycle->port);
-            sockaddr.sin_addr.s_addr = inet_addr(dcycle->host);
+			if(dcycle->udp_flag!=1)
+			{
+				sock->sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+				struct sockaddr_in sockaddr;
+            	sockaddr.sin_family = AF_INET;
+            	sockaddr.sin_port = htons(dcycle->port);
+            	sockaddr.sin_addr.s_addr = inet_addr(dcycle->host);
             
-            int flag = 1;
-            setsockopt(sock->sock_fd, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag) );
-            if (-1 != connect(sock->sock_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)))
-                sock->status = TRUE;
-            
+            	int flag = 1;
+            	setsockopt(sock->sock_fd, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag) );
+            	if (-1 != connect(sock->sock_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)))
+                	sock->status = TRUE;
+			}
+			else
+				sock->sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+
             sock->idle = TRUE;
         }
         
@@ -173,7 +191,7 @@ void dcenter_health_check(int fd, short event, void* arg)
 }
 
 
-void dcenter_sock_init(void)
+void dcenter_sock_tcp_init(void)
 {
     int i = 0;
     for (; i < DA_SOCK_NUM; i++)
@@ -208,6 +226,30 @@ void dcenter_sock_init(void)
 }
 
 
+void dcenter_sock_udp_init(void)
+{
+    int i = 0;
+    for (; i < DA_SOCK_NUM; i++)
+    {
+        dcenter_sock_t* sock = (dcenter_sock_t*)MALLOC(dcenter_sock_t, 1);
+        
+        sock->prev = NULL;
+        sock->next = NULL;
+        sock->sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+        sock->idle = TRUE;
+
+        if (dcycle->socks == NULL)
+            dcycle->socks = sock;
+        else
+        {
+            sock->prev = dcycle->socks;
+            dcycle->socks->next = sock;
+        }
+        
+        dcycle->socks = sock;
+    }
+}
+
 dcenter_sock_t* pick_dcenter_sock(void)
 {
     dcenter_sock_t* sock = dcycle->socks;
@@ -229,19 +271,24 @@ dcenter_sock_t* pick_dcenter_sock(void)
         
         sock->prev = NULL;
         sock->next = NULL;
-        sock->sock_fd = socket(AF_INET, SOCK_STREAM, 0);
         sock->idle = TRUE;
+
+		if(dcycle->udp_flag!=1)
+		{		
+			sock->sock_fd = socket(AF_INET, SOCK_STREAM, 0);
+       		struct sockaddr_in sockaddr;
+        	sockaddr.sin_family = AF_INET;
+        	sockaddr.sin_port = htons(dcycle->port);
+        	sockaddr.sin_addr.s_addr = inet_addr(dcycle->host);
         
-        struct sockaddr_in sockaddr;
-        sockaddr.sin_family = AF_INET;
-        sockaddr.sin_port = htons(dcycle->port);
-        sockaddr.sin_addr.s_addr = inet_addr(dcycle->host);
-        
-        int flag = 1;
-        setsockopt(sock->sock_fd, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag) );
-        if (-1 != connect(sock->sock_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)))
-            sock->status = TRUE;
-        
+        	int flag = 1;
+        	setsockopt(sock->sock_fd, IPPROTO_TCP, TCP_NODELAY, (char *)&flag, sizeof(flag) );
+        	if (-1 != connect(sock->sock_fd, (struct sockaddr *)&sockaddr, sizeof(sockaddr)))
+            	sock->status = TRUE;
+		}
+		else
+			sock->sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+		
         if (dcycle->socks == NULL)
             dcycle->socks = sock;
         else
@@ -259,7 +306,6 @@ dcenter_sock_t* pick_dcenter_sock(void)
     
     return sock;
 }
-
 
 void load_host_sample()
 {

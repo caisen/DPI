@@ -45,6 +45,8 @@ typedef struct dagent_cycle_s
     
     char* interface;
     char* conf;
+
+	int udp_flag;
     
     char* buffer;
     unsigned int length;

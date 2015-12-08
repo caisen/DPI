@@ -1,6 +1,6 @@
 #PCAP
 #CFLAGS = -UENABLE_STAT_ONLY -UENABLE_LIBNET_LINK -UENABLE_MAC_SPECIFIED -UENABLE_DEBUG -Wall -O2
-#LDFLAGS = -L/usr/lib -L/usr/lib64/ -lpcap -lnet
+#LDFLAGS = -L/usr/lib -L/usr/lib64/ -lpcap -lnet -lpthread -levent -levent_pthreads -lz
 
 #PFRING
 CFLAGS = -Wall -g -O0
