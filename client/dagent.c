@@ -3,6 +3,39 @@
 
 dagent_cycle_t *dcycle;
 
+
+void print_matched_stat(void)
+{
+	char buf[128]={0};
+	int len=0;
+    time_t tt;
+    struct tm local_time;
+    
+    time(&tt);
+    /* 此处使用localtime_r 避免localtime 信号不安全问题*/
+    localtime_r(&tt, &local_time);
+    strftime(buf, sizeof(buf), "%Y-%m-%d %H:%M:%S ", &local_time);
+	
+	len = sprintf(buf, "%s %d\n", buf, dcycle->count);
+	fwrite(buf, len, 1, dcycle->log_fd);
+	fflush(dcycle->log_fd);
+	dcycle->count = 0;
+}
+
+
+void killer(int sig)
+{
+	print_matched_stat();
+	exit(0);
+}
+
+/* 统计命中的规则数 */
+void SignHandler2(int iSignNo)
+{
+    print_matched_stat();
+}
+
+
 int main(int argc, char *argv[])
 {
     char* host = NULL;
@@ -31,19 +64,19 @@ int main(int argc, char *argv[])
                 port = (short)atoi(optarg);
                 break;
 			case 'u':
-					udp_flag = 1;
+					udp_flag = (short)atoi(optarg);
 					break;
 
                 
             default:	/* '?' */
-                printf("dagent version:%s \nusage: %s -c conf_file -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
+                printf("dagent version:%s \nusage: %s -c conf_file -u udp_flag -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
                 return 1;
 		}
 	}
 
 	if (host == NULL || port <= 0 || (interface == NULL))
 	{
-        printf("dagent version:%s \nusage: %s -c conf_file -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
+        printf("dagent version:%s \nusage: %s -c conf_file  -u udp_flag  -h sync_host -p sync_port -i ethx \n", DA_VERSION, argv[0]);
 		return 1;
 	}
     
@@ -54,12 +87,19 @@ int main(int argc, char *argv[])
 	dcycle->udp_flag = udp_flag;
     dcycle->interface = (interface != NULL) ? strdup(interface) : NULL;
     dcycle->conf = (conf != NULL) ? strdup(conf) : NULL;
+
+	dcycle->log_fd = fopen("/tmp/dskj.log","a+");
     
     /* set work mode */
     dcycle->port = port;
     dcycle->host = strdup(host);
     
     /* signal process */
+    signal(SIGINT, killer);
+    signal(SIGQUIT, killer);
+    signal(SIGTERM, killer);
+    signal(SIGKILL, killer);
+    signal(SIGUSR2, SignHandler2);
     signal(SIGPIPE, SIG_IGN);
 	
     /* load host */
@@ -104,6 +144,7 @@ dagent_cycle_t* cycle_init()
     time_t tt;
     time(&tt);
     dcycle->timestamp = mktime(localtime(&tt));
+	dcycle->count = 0;
     
     /* init req buffer */
     dcycle->req = http_new_request();

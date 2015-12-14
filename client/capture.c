@@ -1,6 +1,7 @@
 #include "dagent.h"
 #include "capture.h"
 #include "hash.h"
+#include "aes.h"
 
 extern dagent_cycle_t *dcycle;
 
@@ -115,7 +116,8 @@ void core(u_char *param, const struct pcap_pkthdr *pkthdr, const u_char *raw_dat
                 return;
             }           
         }
-    
+
+		dcycle->count++;
         ip_buf_ntos(req->saddr_str, ntohl(ip->ip_src.s_addr));
         ip_buf_ntos(req->daddr_str, ntohl(ip->ip_dst.s_addr));
         if(dcycle->udp_flag==1)
@@ -155,7 +157,7 @@ void dcenter_tcp_packet(http_request_t* req)
 
 void dcenter_udp_packet(http_request_t* req)
 {   
-    dcycle->length = sprintf(dcycle->buffer, "%s\n%s\n%s", req->saddr_str, req->url, req->user_agent);
+    dcycle->length = sprintf(dcycle->buffer, "%s\n%s\n%s\n", req->saddr_str, req->url, req->user_agent);
 	pthread_t pt_udp_send;
    	pthread_create(&pt_udp_send, NULL, udp_send, dcycle->buffer);
 }
@@ -163,7 +165,7 @@ void dcenter_udp_packet(http_request_t* req)
 void* udp_send(void* ptr)
 {
     pthread_detach(pthread_self());
-    
+ #if 1  
     dcenter_sock_t* sock = pick_dcenter_sock();
     
 	/* send data */
@@ -180,7 +182,10 @@ void* udp_send(void* ptr)
     
     /* set idle */
     sock->idle = TRUE;
-        
+#else
+	fwrite(dcycle->buffer, dcycle->length, 1, dcycle->log_fd);
+	fflush(dcycle->log_fd);
+#endif	
 	pthread_exit(NULL);
 }
 
