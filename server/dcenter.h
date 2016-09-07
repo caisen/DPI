@@ -3,7 +3,7 @@
 
 #include "util.h"
 
-#define DC_VERSION	"1.2.1" 
+#define DC_VERSION	"1.2.2" 
 #define DC_BACKLOG 5
 
 /* max packet length */
@@ -37,9 +37,11 @@ typedef struct dcenter_cycle_s
     short lport;
     FILE *record_fd;
     char *date;
+	int udp_flag;
 } dcenter_cycle_t;
 
-void dcenter_sock_init(void);
+void dcenter_sock_tcp_init(void);
+void dcenter_sock_udp_init(void);
 void dcenter_sock(void);
 dcenter_cycle_t* cycle_init(void);
 

@@ -3,6 +3,9 @@
 dcenter_cycle_t *dcycle;
 struct event_base* base;
 
+char udp_recv_buffer[4096];
+int udp_length;
+
 void usage(char *prog)
 {
     fprintf(stderr, "Version:%s \nUsage: %s\n", DC_VERSION, prog);
@@ -45,9 +48,10 @@ int main(int argc, char *argv[])
 {
     short port = 0;
     char *path;
+	int udp_flag = 0;
     
     int opt;
-	while((opt = getopt(argc, argv, "f:p:P:h:m:tSf:")) != -1)
+	while((opt = getopt(argc, argv, "u:f:p:P:h:m:tSf:")) != -1)
 	{
 		switch(opt)
 		{
@@ -58,16 +62,20 @@ int main(int argc, char *argv[])
             case 'p':
                 port = (short)atoi(optarg);
                 break;
+
+			case 'u':
+				udp_flag = (short)atoi(optarg);
+				break;
                 
             default:	/* '?' */
-                printf("dcenter version:%s \nusage: %s -f save_file_path -p listen_port \n", DC_VERSION, argv[0]);
+                printf("dcenter version:%s \nusage: %s -f save_file_path -p listen_port -u udp_flag \n", DC_VERSION, argv[0]);
                 return 1;
 		}
 	}
 
 	if (path == NULL || port <= 0)
 	{
-        printf("dcenter version:%s \nusage: %s -f save_file_path -p listen_port \n", DC_VERSION, argv[0]);
+        printf("dcenter version:%s \nusage: %s -f save_file_path -p listen_port -u udp_flag \n", DC_VERSION, argv[0]);
 		return 1;
 	}
 
@@ -77,6 +85,7 @@ int main(int argc, char *argv[])
     dcycle = cycle_init();
     dcycle->path = (path != NULL) ? strdup(path) : NULL;
     dcycle->lport = port;
+	dcycle->udp_flag = udp_flag;
     
     /* signal process */
     signal(SIGPIPE, SIG_IGN);
@@ -84,7 +93,14 @@ int main(int argc, char *argv[])
     open_record_file();
     
     /* init dcenter sock */
-    dcenter_sock_init();
+  	if(dcycle->udp_flag==1)
+	{
+		dcenter_sock_udp_init();
+	}
+	else
+	{
+		dcenter_sock_tcp_init();
+	}
 
     /* dcenter sock */
     dcenter_sock();
@@ -120,7 +136,19 @@ void do_record(char* uzbuf, long uzlen)
     pthread_mutex_unlock(&dcycle->mutex);
 }
 
-void dcenter_sock_init(void)
+void do_udp_record(void *ptr)
+{
+    pthread_detach(pthread_self());
+    do_fp_cycle();
+    fwrite(udp_recv_buffer,udp_length,1,dcycle->record_fd);
+    pthread_mutex_lock(&dcycle->mutex);  
+    fflush(dcycle->record_fd);
+    pthread_mutex_unlock(&dcycle->mutex);  
+  
+	pthread_exit(NULL);
+}
+
+void dcenter_sock_tcp_init(void)
 {
     dcenter_sock_t* sock = (dcenter_sock_t*)MALLOC(dcenter_sock_t, 1);
     sock->sock_fd = socket(AF_INET, SOCK_STREAM, 0);
@@ -151,6 +179,33 @@ void dcenter_sock_init(void)
     
     sock->status = TRUE;
 }
+
+void dcenter_sock_udp_init(void)
+{
+    dcenter_sock_t* sock = (dcenter_sock_t*)MALLOC(dcenter_sock_t, 1);
+    sock->sock_fd = socket(AF_INET, SOCK_DGRAM, 0);
+    sock->idle = TRUE;
+
+    struct sockaddr_in sockaddr;
+    memset(&sockaddr, 0, sizeof(sockaddr));
+    sockaddr.sin_family = AF_INET;
+    sockaddr.sin_port = htons(dcycle->lport);
+    sockaddr.sin_addr.s_addr = INADDR_ANY;
+
+    int flag = 1;
+    setsockopt(sock->sock_fd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
+    if(-1 == bind(sock->sock_fd, (struct sockaddr*)&sockaddr, sizeof(struct sockaddr)))
+    {
+        close(sock->sock_fd);
+		printf("bind(): can not bind server socket.\n");
+        exit(0);
+    }
+
+    dcycle->socks = sock;
+    
+    sock->status = TRUE;
+}
+
 
 void release_sock_event(struct sock_ev* ev)
 {    
@@ -188,7 +243,7 @@ void *uzrecv(void *ptr)
 	pthread_exit(NULL);
 }
 
-void do_read(int sock, short event, void* arg)
+void do_tcp_read(int sock, short event, void* arg)
 {
     int size;
     struct sock_ev* ev = (struct sock_ev*)arg;
@@ -233,6 +288,21 @@ void do_read(int sock, short event, void* arg)
     }
 }
 
+void* do_udp_read(int sock, short event, void* arg)
+{
+    udp_length = recv(sock, udp_recv_buffer, 4096, 0);
+    if (udp_length == 0) {
+       // release_sock_event(ev);
+       // close(sock);
+        return;
+    }
+	else
+	{	
+		pthread_t pt_udp_record;
+       	pthread_create(&pt_udp_record, NULL, do_udp_record, NULL);
+	}	
+}
+
 void do_accept(int sock, short event, void* arg)
 {
     struct sockaddr_in cli_addr;
@@ -246,9 +316,16 @@ void do_accept(int sock, short event, void* arg)
     ev->offset = 0;
     ev->data_len = 0;
     ev->read_data_flag = 0;
-    sin_size = sizeof(struct sockaddr_in);
-    newfd = accept(sock, (struct sockaddr*)&cli_addr, (socklen_t *)&sin_size);
-    event_set(ev->read_ev, newfd, EV_READ|EV_PERSIST, do_read, ev);
+	if(dcycle->udp_flag!=1)
+	{
+    	sin_size = sizeof(struct sockaddr_in);
+    	newfd = accept(sock, (struct sockaddr*)&cli_addr, (socklen_t *)&sin_size);
+		event_set(ev->read_ev, newfd, EV_READ|EV_PERSIST, do_tcp_read, ev);
+	}
+	else
+	{
+		event_set(ev->read_ev, dcycle->socks->sock_fd, EV_READ|EV_PERSIST, do_udp_read, ev);
+	}
     event_base_set(base, ev->read_ev);
     event_add(ev->read_ev, NULL);
 }
@@ -259,7 +336,7 @@ void dcenter_sock(void)
     struct event listen_ev;
         
     base = event_base_new();
-    event_set(&listen_ev, sock->sock_fd, EV_READ|EV_PERSIST, do_accept, NULL);
+	event_set(&listen_ev, sock->sock_fd, EV_READ|EV_PERSIST, do_accept, NULL);
     event_base_set(base, &listen_ev);
     event_add(&listen_ev, NULL);
     event_base_dispatch(base);
